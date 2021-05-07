@@ -1,0 +1,348 @@
+---
+title: " US Police Shootings"
+author: "Narges Shahmohammadi Heydari (yxs662)"
+date: "03/30/2021"
+output: html_document
+ 
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+packs <- c("googleVis", "tidyr", "tidyverse","gridExtra", "dplyr", "usmap","rjson","rjson","plyr", "stringr","wesanderson", "data.table", "ggplot2", "scales","hrbrthemes","viridis", "plotly", "gganimate")
+for ( p in packs) library(p, character.only = T)
+rm(packs, p)
+```
+
+## R Markdown
+
+
+```{r cars,include = FALSE, echo=FALSE}
+
+shooting<-read.csv("C:/Users/narge/Documents/semester 2/T&T/pro2/shootings.csv")
+shooting$date <- as.Date(shooting$date, format="%m/%d/%Y")
+shooting$race <- as.factor(shooting$race)
+shooting$age <- as.integer(shooting$age)
+#head(shooting)
+
+```
+
+Police violence has become a high-profile topic in recent months due to the death of George Flyod. A wave of anti-racism protests swept across the United States and I as an international person was Curious to find more information about the USA police shooting.
+Over the last 5 years, a lot of information on the victims has been registered.this data frame contains basic data about people like their name, age, gender and race. Along with it, is the shooting/killing information, like date of event, where it happened? how they were shot? did they attack? Were they holding weapons? Did they show any mental illness? Was the policeman wearing a camera/was the incident recorded? Did the suspect flee? Apart from that, a category column holds type of weapon used by the suspect. since to resent issue about racism in America, I was Curious to know what this data going to tell us! Of course I did not use all of its columns but here is some result of my data visualization. It is good to mention that data for year 2020 **IS NOT COMPLETE**.
+
+Count of shooting in the USA by year. I want to mention again that **the data for 2020 is not for the whole year**. it seems that we have a very mild slop between 2015 and 2020.
+
+```{r 1, echo=FALSE, warning=FALSE}
+sh<-shooting %>%
+  mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by(month, year, week) %>%
+  summarise(count = n())
+
+  ggplot(sh, aes(x = year, y = count,fill=year)) +
+  geom_bar(
+   
+    stat = "identity", position = position_stack())+
+    ggtitle("Count Of Shooting In USA By Year") +
+    scale_fill_brewer(palette="BrB")+
+    theme_minimal()
+
+```
+
+Count of death in the USA by MONTH. It seems that death in last months of each year are less than others
+
+```{r 2,echo=FALSE, warning=FALSE}
+sh2<-shooting %>%
+  mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by(month, year, week) %>%
+  summarise(count = n())
+
+  ggplot(sh2, aes(x = month, y = count,fill=month)) +
+  geom_bar(
+   
+    stat = "identity", position = position_stack())+
+    ggtitle("Count Of Death By Police In USA By Month") +
+   
+    scale_fill_brewer(palette="Set3")+
+    theme_minimal()
+```
+
+it is good to take a look at the gender of people who died by police shooting. as I had thought women are in the minority(4.54% | 95.5%)
+
+```{r 3,echo=FALSE,warning = FALSE}
+
+fig <- plot_ly(shooting, labels = ~gender, type = 'pie')
+fig <- fig %>% layout(title = "Percentage Of Gender",
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig
+```
+
+By this donut plot we can see around 56% of them had guns and 7% had nothings!In other word the vast majority of casualties were armed with guns, followed by people with sharp objects like knives, axes etc. However, there is also %7 of unarmed victims which can give you the idea that the police has behaved too aggressively. 
+```{r 4,echo=FALSE, warning=FALSE}
+sh7 <- shooting
+sh7 <-sh7 %>% group_by(arms_category)
+sh7 <- sh7 %>% summarise(count = n())
+fig <- sh7 %>% plot_ly(labels = ~arms_category, values = ~count)
+fig <- fig %>% add_pie(hole = 0.5)
+fig <- fig %>% layout(title = "Arms Category",  showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig
+```
+In threat level column we can see how was the situation. did the person attack or not.However the data does not mention what is the meaning of **other** but it is obvious that %65 of them attacked police.
+```{r 4-1,echo=FALSE, warning=FALSE}
+fig <- plot_ly(shooting, labels = ~threat_level, type = 'pie',marker = list(colors = c('aqua2', 'darkturquoise')))
+fig <- fig %>%
+  layout(title = "Threat Level",
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+         )
+
+fig
+```
+As the bar plot is showing us, most of the people who got shot by police did not flee. it does not mean that all of them attacked the police but, it is possible that police has counted them as a threat.
+```{r 5-0,echo=FALSE, warning=FALSE}
+flees<-shooting %>%
+
+  group_by(flee) %>%
+  summarise(count = n())
+
+ggplot(flees, aes(x = flee, y = count,fill=flee)) +
+  geom_bar(stat = "identity", position = position_stack())+
+    ggtitle("") +
+    scale_fill_brewer(palette="BrBG")+
+    theme_minimal()
+```
+
+In terms of absolute numbers, more white people were fatally shot by police than any other race, with around 2,500 fatalities since 2015.However, don't forget that normalizing the number of fatalities by demographics will show us that  Native American and Black people suffered more fatal police shootings than white people. since 72% of US citizens are White, so below results are because of the low population of other races.
+```{r 5,echo=FALSE, warning=FALSE}
+
+sho<-shooting %>%
+
+  group_by(race) %>%
+  summarise(count = n())
+
+  ggplot(sho, aes(x = race, y = count,fill=race)) +
+  geom_bar(stat = "identity", position = position_stack())+
+    scale_fill_brewer(palette="BrBG")+
+    ggtitle("Plot Of Races") +
+    theme_minimal()
+```
+
+and it is happening almost each year...but the difference between them are notable
+```{r 6,echo=FALSE, warning=FALSE}
+hh<-shooting %>%
+    mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by( month, year, week,race) %>%
+  summarise(count  = n())
+
+
+fig <- plot_ly(hh,x =~year, y = ~count, color= ~race,mode = 'lines',colors ="BrBG") %>%
+ layout(title = "Race Of Killed Persons In Each Year")
+
+fig
+
+```
+Also grouping gender in each race shows us the same result.
+```{r 8,echo=FALSE, warning=FALSE}
+gende_and_race<-shooting %>%
+  group_by( gender,race) %>%
+  summarise(gendercount  = n())
+fig <- plot_ly(gende_and_race,x =~race, y = ~gendercount, color= ~gender,mode = 'lines',colors =c("#143D59","#F4B41A")) %>%
+ layout(title = "Gender of Killed Persons In Each Race")
+
+fig
+```
+
+Base on this density plot, it indicates that black people who got shoot by police are more younger than other race. For white people, it shows that the graph has flatter decrease when the age is increase. This means the age of range is more significant than other race
+```{r 7,echo=FALSE, warning=FALSE}
+a_r <- ggplot(shooting,aes(x=age, group=race))+
+  
+  geom_density(aes(fill=race),alpha=0.4)+
+  labs(title="Age & Race")
+  #yaxis(title=" ")
+
+
+a_r
+```
+
+It is interesting that %88 of this report belongs to that police who have no camera on their uniform. Los Angeles police officers began using body cameras in 2015. In April of 2018, the LAPD began releasing bodycam footage to the public from officer-involved shootings. 
+```{r 9,echo=FALSE, warning=FALSE}
+
+fig <- plot_ly(shooting, labels = ~body_camera, type = 'pie',marker = list(colors=c("rgba(192, 192, 192, 0.7)")))
+fig <- fig %>% layout(title = "Percentage Of body camera",
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig
+```
+It is not completely clear but, it seems that we have very mild slop in this plot which indicates killing by officers shooting who do not use the body camera is decreasing each year.
+```{r 10, echo=FALSE, warning=FALSE}
+H1<-shooting %>%
+    mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by(year,body_camera) %>%
+  summarise(count  = n())
+
+fig <- plot_ly(H1,x =~year, y = ~count, color= ~body_camera,mode = 'lines',colors =c("#143D59","#F4B41A")) %>%
+ layout(title = "USING OF BODY CAMERA EACH YEAR")
+
+fig
+```
+By this plot we can see that California, Texas and Felorida are the top three state in the USA in this case
+```{r 11,echo=FALSE, warning=FALSE}
+BB<-shooting %>%
+
+  group_by(state,city) %>%
+  summarise(Count_of_death_by_shooting  = n())
+
+BB1 <- BB[order(BB$Count_of_death_by_shooting,decreasing = TRUE),]
+
+fig <- plot_ly(BB1,x =~state, y = ~Count_of_death_by_shooting,mode = 'bar',marker = list(color = 'rgb(55, 83, 109)'
+    )) %>%
+layout(
+     title = "which state is on top",
+     xaxis = list(title = "",
+    # categoryorder = "array",
+     categoryarray = ~Count_of_death_by_shooting))
+
+fig
+
+```
+I tried to get a map plot of the count of death by police shooting across the USA, it is more clear than bar plot which I showed before
+```{r 17,echo=FALSE, warning=FALSE}
+url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+counties <- rjson::fromJSON(file=url)
+url2<- "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv"
+#df <- read.csv(url2, colClasses=c(fips="character"))
+# give state boundaries a white border
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+shooting1<-shooting%>%
+  group_by(state) %>%
+  summarise(count = n())
+
+fig <- plot_geo(shooting1, locationmode = 'USA-states')
+fig <- fig %>% add_trace(
+    z = ~count, text = ~state, locations = ~state,
+    color = ~count, colors = 'Reds'
+  )
+fig <- fig %>% colorbar(title = "count of death")
+fig <- fig %>% layout(
+    title = 'Map Of Pplice Shooting In States',
+    geo = g
+  )
+
+fig
+
+```
+Also by Age groups plot, we will understand better that age groups of (20-29),(30-34) and (35-39)are the most age range of killed by police.
+```{r 12,echo=FALSE, warning=FALSE}
+labs <- c(paste(seq(0, 95, by = 5), seq(0 + 5 - 1, 100 - 1, by = 5),
+                sep = "-"), paste(100, "+", sep = ""))
+
+shooting$AgeGroup <- cut(shooting$age, breaks = c(seq(0, 100, by = 5), Inf), labels = labs, right = FALSE)
+
+AA<-shooting %>%
+
+  group_by(AgeGroup) %>%
+  summarise(AgeGroupS = n())
+
+fig <- plot_ly(AA,x =~AgeGroup, y = ~AgeGroupS,mode = 'bar')%>%
+layout(
+     title = "Age groups",
+     xaxis = list(title = ""))
+
+
+fig
+```
+
+By filtering the data on California and Texas I got a plot for race column and as you can see Hispanics are on top in California. As this [link](https://www.census.gov/quickfacts/CA) says, it is because the Hispanic race is in majority in California. Beside California, Texas as the second state has white race on top, and again that's because White as this [link](https://www.census.gov/quickfacts/fact/table/TX/POP010210) says is a majority in Texas. they are %78 of the population of Texas.
+```{r 14,echo=FALSE, warning=FALSE}
+tow_shooting<-filter(shooting, state == c("TX","CA"))
+two1<-tow_shooting %>%
+
+  group_by( race,state ) %>%
+  summarise(death_in_two  = n()) 
+
+
+fig <- plot_ly(two1,x =~state, y = ~death_in_two, color= ~race,mode = 'lines',colors ="BrBG") 
+
+
+fig
+```
+
+This bar plot is just a simple comparison between two states TEXAS and CALIFORNIA. Since California's population is much more than Texas so, differences between them make sense 
+```{r 15,echo=FALSE, warning=FALSE}
+target <- c("TX", "CA")
+
+tx.ca<-filter(shooting, state %in% target)
+#head(tx.ca)
+ta<-tx.ca %>%
+    mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by( year,state) %>%
+  summarise(death_amount = n())
+
+fig <- plot_ly(ta,x =~year, y = ~death_amount, color= ~state,mode = 'lines') 
+
+
+fig
+```
+
+Although there is a lot of difference in the amount of killing between people who have not a mental illness and the people who have this issue but, we can and should implement programs to reduce fatal encounters between police and people with mental illness. 
+```{r 16,echo=FALSE, warning=FALSE}
+dd<-shooting%>%
+  group_by( signs_of_mental_illness) %>%
+  summarise( count  = n())
+fig <- plot_ly(dd,x =~signs_of_mental_illness, y = ~count,color= ~signs_of_mental_illness,mode = 'lines',colors =c("#143D59","#F4B41A")) 
+
+fig
+```
+
+The map shows that California is the first state in this issue, followed by Texas and Florida. Now let's see which cities police shootings mostly happen.( Majority of police shooting cases that happened between 2015 to 2020 were in Los Angeles).
+What is surprising is the fact that the biggest city in the USA, NYC is the 20th worst city (with around 8 million people population) when Albuquerque, NM (545000 people living there) is on the 7th place! This tells us that the size of the city is not necessarily the main factor why these events happened. I believe this has to do a lot of with economy (many cities there used to be an industrial areas that went through a very rough times).
+
+```{r 18,echo=FALSE, warning=FALSE}
+shooting$City_state<-paste(shooting$city,shooting$state,sep='-')
+Cities<-as.data.frame(table(shooting$City_state)) %>%
+  arrange(-Freq)%>%
+  head(20)
+
+Cities$City<-sapply(str_split(Cities$Var1,'-'), `[[`, 1)
+Cities$State<-sapply(str_split(Cities$Var1,'-'), `[[`, 2)
+Cities$Var1<-NULL
+Cities<-Cities %>%mutate(City=factor(City,levels=City))
+
+ggplot(data=Cities,aes(x=City,y=Freq,fill=State))+
+  geom_bar(stat='identity')+
+
+  theme(axis.text.x=element_text(angle=90,hjust=1,size = 7),panel.background = element_blank())
+  
+```
+
+Each race has a mild slope to down during a year
+```{r 19,echo=FALSE, warning=FALSE}
+hh<-shooting %>%
+    mutate(year = format(date, "%Y"),month = format(date, "%m"), week = format(date,"%d")) %>%
+
+  group_by(race, month) %>%
+  summarise(Races=n())
+plot_ly(hh, x=~month, y=~Races,color=~race,
+        type = 'scatter', mode = 'lines')
+```
+
+
+## Conclusion
+
+In conclusion, the police shooting is affected by the variables like : flee, threat_level and arms_category. If the person is attacking and holding a gun, the chance of police shooting will higher. Race does not affect The police shooting, as the analysis shows that white people have the highest number compare to other races. However, black people who got shoot by police are more younger than other race .the number of police turn on the camera is very low. From the analysis, it also shows the most the people who got shot is around 20 to 40 and also male is significantly higher than female. The use of map displays that California has the highest number, which indicates the people in California have a higher chance of involve in criminal activity.however, the size of the city is not necessarily the main factor why these events happened.
