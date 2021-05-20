@@ -18,7 +18,7 @@ rm(packs, p)
 
 ```{r cars,include = FALSE, echo=FALSE}
 
-shooting<-read.csv("C:/Users/narge/Documents/semester 2/T&T/pro2/shootings.csv")
+shooting<-read.csv("shootings.csv")
 shooting$date <- as.Date(shooting$date, format="%m/%d/%Y")
 shooting$race <- as.factor(shooting$race)
 shooting$age <- as.integer(shooting$age)
